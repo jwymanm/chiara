@@ -1,5 +1,4 @@
-(ns clarity.utils
-  (:refer-clojure :exclude [peek]))
+(ns clarity.utils)
 
 ;; ----------------
 ;; Inner namespaces
@@ -21,7 +20,7 @@
 ;; -------------
 
 (inner-namespace reader-macros
-  (use 'clarity.reader)
+  (use '[clarity.reader [utils :rename {peek rpeek}] macros])
   (import clojure.lang.Util)
 
   (defn colon-reader [reader c]
@@ -46,17 +45,17 @@
     (loop [s ""]
       (if (.endsWith s end)
         (.substring s 0 (- (.length s) (.length end)))
-        (if (peek reader)
+        (if (rpeek reader)
           (recur (str s (read-1 reader)))
           (Util/runtimeException "EOF while reading literal string.")))))
 
   (defn literal-string-reader [reader _]
     (let [string-reader (get-default-macro \")]
-      (if-not (= (peek reader) \")
+      (if-not (= (rpeek reader) \")
         (string-reader reader (int \"))
         (do
           (read-1 reader)
-          (if-not (= (peek reader) \")
+          (if-not (= (rpeek reader) \")
             ""
             (do
               (read-1 reader)

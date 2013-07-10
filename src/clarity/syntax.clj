@@ -1,8 +1,13 @@
-(ns clarity.symbol
+(ns clarity.syntax
   (:refer-clojure :exclude [peek])
-  (use clarity.reader))
+  (use [clarity.reader macros utils]))
 
-(defn- read-literal
+(defn ^:private current-ns
+  "Return the name of the current
+  ns as a symbol."
+  [] (ns-name *ns*))
+
+(defn ^:private read-literal
   "Reads chars into a string (verbatim) until
   the next unmatched ')'."
   [reader]
@@ -21,9 +26,9 @@
         :else
           (recur (conj chars char) brackets)))))
 
-(defonce symbol-table (atom {}))
+(defonce ^:private symbol-table (atom {}))
 
-(defn symbol-dispatch
+(defn ^:private symbol-dispatch
   "Called by the reader on encountering a
   list - decides whether to read as a macro
   or as a regular list."
