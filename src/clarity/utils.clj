@@ -1,56 +1,73 @@
 (ns clarity.utils
-  (:refer-clojure :exclude [peek])
-  (use clarity.reader)
-  (import clojure.lang.Util))
+  (:refer-clojure :exclude [peek]))
+
+;; ----------------
+;; Inner namespaces
+;; ----------------
+
+(defmacro inner-namespace [name & forms]
+  (let [outer-ns (ns-name *ns*)
+        inner-ns (symbol (str outer-ns "." name))]
+   `(do
+      (if (find-ns '~inner-ns)
+        (in-ns '~inner-ns)
+        (ns ~inner-ns))
+      ~@forms
+      (in-ns '~outer-ns)
+      (use '~inner-ns))))
 
 ;; -------------
 ;; Reader macros
 ;; -------------
 
-(defn colon-reader [reader c]
-  (let [next (read-1 reader)]
-    (if-not (= next \space)
-      ; Keyword
-      (do
-        (unread reader next)
-        (-> reader read-next keyword))
-      ; Implicit bracket
-      (loop [list []
-             c    (read-1 reader)]
-        (cond
-          (#{\space \,} (char c)) (recur list (read-1 reader))
-          (#{"\n" ")" "]" "}" nil} (str (char c))) (do (unread reader c) (seq list))
-          :else                  (do
-                                   (unread reader c)
-                                   (recur (conj list (read reader))
-                                          (read-1 reader))))))))
+(inner-namespace reader-macros
+  (use 'clarity.reader)
+  (import clojure.lang.Util)
+
+  (defn colon-reader [reader c]
+    (let [next (read-1 reader)]
+      (if-not (= next \space)
+        ; Keyword
+        (do
+          (unread reader next)
+          (-> reader read-next keyword))
+        ; Implicit bracket
+        (loop [list []
+               c    (read-1 reader)]
+          (cond
+            (#{\space \,} (char c)) (recur list (read-1 reader))
+            (#{"\n" ")" "]" "}" nil} (str (char c))) (do (unread reader c) (seq list))
+            :else                  (do
+                                     (unread reader c)
+                                     (recur (conj list (read reader))
+                                            (read-1 reader))))))))
+
+  (defn read-literal [reader end]
+    (loop [s ""]
+      (if (.endsWith s end)
+        (.substring s 0 (- (.length s) (.length end)))
+        (if (peek reader)
+          (recur (str s (read-1 reader)))
+          (Util/runtimeException "EOF while reading literal string.")))))
+
+  (defn literal-string-reader [reader _]
+    (let [string-reader (get-default-macro \")]
+      (if-not (= (peek reader) \")
+        (string-reader reader (int \"))
+        (do
+          (read-1 reader)
+          (if-not (= (peek reader) \")
+            ""
+            (do
+              (read-1 reader)
+              (read-literal reader "\"\"\"")))))))
+)
 
 (def colon {:char \: :reader colon-reader})
-
-(defn- read-literal [reader end]
-  (loop [s ""]
-    (if (.endsWith s end)
-      (.substring s 0 (- (.length s) (.length end)))
-      (if (peek reader)
-        (recur (str s (read-1 reader)))
-        (Util/runtimeException "EOF while reading literal string.")))))
-
-(defn literal-string-reader [reader _]
-  (let [string-reader (get-default-macro \")]
-    (if-not (= (peek reader) \")
-      (string-reader reader (int \"))
-      (do
-        (read-1 reader)
-        (if-not (= (peek reader) \")
-          ""
-          (do
-            (read-1 reader)
-            (read-literal reader "\"\"\"")))))))
-
 (def literal-string {:char \" :reader literal-string-reader})
 
 ;; ------
-;; Macros
+;; Lambda
 ;; ------
 
 (defmacro λ [& exprs]
@@ -64,35 +81,38 @@
         args        (or args '[& [% %2 %3 %4 %5 :as %s]])]
     `(fn ~args ~body)))
 
-(defmacro l [& exprs] `(λ ~@exprs))
+; (defmacro l [& exprs] `(λ ~@exprs))
 
 ;; -----
 ;; Infix
 ;; -----
 
-(defn- list?' [form]
-  (or (list? form)
-      (= (type form) clojure.lang.LazySeq)
-      (= (type form) clojure.lang.Cons)))
+(inner-namespace infix
 
-(defn- infix-sym [form]
-  (cond
-    (and (symbol? form) (not (re-find #"[a-zA-Z0-9]" (name form))))
-      form
-    (and (list?' form) (= (count form) 2) (= (first form) 'quote))
-      (second form)))
+  (defn list?' [form]
+    (or (list? form)
+        (= (type form) clojure.lang.LazySeq)
+        (= (type form) clojure.lang.Cons)))
 
-(defn- infixify* [[first second & rest :as list]]
-  (if-not (infix-sym first)
-    (if-let [second (infix-sym second)]
-      (concat [second first] rest)
-      list)
-    list))
+  (defn infix-sym [form]
+    (cond
+      (and (symbol? form) (not (re-find #"[a-zA-Z0-9]" (name form))))
+        form
+      (and (list?' form) (= (count form) 2) (= (first form) 'quote))
+        (second form)))
 
-(defn infixify [form]
-  (if (list?' form)
-    (map infixify (infixify* form))
-    form))
+  (defn infixify* [[first second & rest :as list]]
+    (if-not (infix-sym first)
+      (if-let [second (infix-sym second)]
+        (concat [second first] rest)
+        list)
+      list))
+
+  (defn infixify [form]
+    (if (list?' form)
+      (map infixify (infixify* form))
+      form))
+)
 
 (defmacro infix
   "Walks over its argument forms, infixing them.
@@ -117,25 +137,28 @@
 
 ;; Implementation of `quote` with unquoting
 
-(defn- seqable? [e]
-  (if-not (string? e)
-    (try (seq e)
-      (catch Exception e false))))
+(inner-namespace quote
 
-(defn- empty' [coll]
-  (if (= (type coll) clojure.lang.MapEntry)
-    []
-    (empty coll)))
+  (defn seqable? [e]
+    (if-not (string? e)
+      (try (seq e)
+        (catch Exception e false))))
 
-(defn- unquote-form? [expr]
-  (and (seq? expr)
-       (= (first expr) `unquote)))
+  (defn empty' [coll]
+    (if (= (type coll) clojure.lang.MapEntry)
+      []
+      (empty coll)))
 
-(defn- unquote-splicing-form? [expr]
-  (and (seq? expr)
-       (= (first expr) `unquote-splicing)))
+  (defn unquote-form? [expr]
+    (and (seq? expr)
+         (= (first expr) `unquote)))
 
-(defmacro q
+  (defn unquote-splicing-form? [expr]
+    (and (seq? expr)
+         (= (first expr) `unquote-splicing)))
+)
+
+(defmacro quote*
   "Like quote, but supports unquote (`~`, `~@`)."
   [expr]
   (cond
@@ -143,15 +166,17 @@
 
     (seq? expr)          (reduce #(if (unquote-splicing-form? %2)
                                     `(concat ~(second %2) ~%1)
-                                    `(conj ~%1 (q ~%2)))
+                                    `(conj ~%1 (quote* ~%2)))
                                  ()
                                  (reverse expr))
 
-    (seqable? expr)      `(into ~(empty' expr) (q ~(seq expr)))
+    (seqable? expr)      `(into ~(empty' expr) (quote* ~(seq expr)))
     (symbol?  expr)      `'~expr
     :else                expr))
 
 ;; Strings with unquoting.
+
+;; Planned: ability to extract forms e.g. "~(range 10)"
 
 (defn symbol-extract [s]
   (map #(if-let [n (second (re-find #"\A\~([\w\-]+)\Z" %))]
@@ -169,9 +194,9 @@
   [s]
  `(str ~@(symbol-extract s)))
 
-;; ---------
-;; Utilities
-;; ---------
+;; ------
+;; Queues
+;; ------
 
 (defn queue [] (atom []))
 
@@ -192,3 +217,32 @@
     (let [result# (do ~@exprs)]
       (swap! ~q subvec 1)
       result#)))
+
+;; --------------
+;; Records as fns
+;; --------------
+
+(inner-namespace defnrecord
+
+(def fn-sym (atom 'f))
+
+(defn sym-list [n]
+  (->> (range n) (map inc) (map #(str "arg" %)) (map symbol)))
+
+(defn invoke-fn [n]
+  (let [syms (sym-list n)]
+    `(~'invoke [~'this ~@syms] (~(deref fn-sym) ~'this ~@syms))))
+
+(defn invoke-fns []
+  (map invoke-fn (range 20)))
+)
+
+(defmacro defnrecord [name vars f & rest]
+  (reset! fn-sym (gensym "fn"))
+ `(do
+    (def ~(deref fn-sym) ~f)
+    (defrecord ~name ~vars
+      clojure.lang.IFn
+        ~@(invoke-fns)
+      ~@rest)
+    (ns-unmap *ns* '~(deref fn-sym))))
