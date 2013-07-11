@@ -125,10 +125,10 @@
   [form]
   (infixify form))
 
-(defmacro |
-  "See `infix`."
-  [& form]
-  `(infix ~(apply list form)))
+; (defmacro |
+;   "See `infix`."
+;   [& form]
+;   `(infix ~(apply list form)))
 
 ;; -----
 ;; Quote
@@ -223,17 +223,17 @@
 
 (inner-namespace defnrecord
 
-(def fn-sym (atom 'f))
+  (def fn-sym (atom 'f))
 
-(defn sym-list [n]
-  (->> (range n) (map inc) (map #(str "arg" %)) (map symbol)))
+  (defn sym-list [n]
+    (->> (range n) (map inc) (map #(str "arg" %)) (map symbol)))
 
-(defn invoke-fn [n]
-  (let [syms (sym-list n)]
-    `(~'invoke [~'this ~@syms] (~(deref fn-sym) ~'this ~@syms))))
+  (defn invoke-fn [n]
+    (let [syms (sym-list n)]
+      `(~'invoke [~'this ~@syms] (~(deref fn-sym) ~'this ~@syms))))
 
-(defn invoke-fns []
-  (map invoke-fn (range 20)))
+  (defn invoke-fns []
+    (map invoke-fn (range 20)))
 )
 
 (defmacro defnrecord [name vars f & rest]
