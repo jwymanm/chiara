@@ -1,6 +1,7 @@
 (ns clarity.syntax
   (:refer-clojure :exclude [peek])
-  (use [clarity.reader macros utils]))
+  (use [clarity.reader macros utils]
+        clarity.utils))
 
 (defn ^:private current-ns
   "Return the name of the current
@@ -56,6 +57,15 @@
   [& args]
   (apply use-symbol-macros args))
 
+(defnrecord SyntaxMacro [symbol reader]
+  (fn [this & []]
+    (throw
+      (Exception.
+        (str (.symbol this) " is a syntax macro "
+             "and can't be called as a function. "
+             "Please make sure you have enabled it "
+             "with (use-syntax " (.symbol this) ").")))))
+
 (defmacro defsyntax
   "Creates a macro which operates on a string of
   it contents. Must be explicitly enabled, per-namespace,
@@ -71,4 +81,4 @@
   of the macro, although other brackets '{}[]' don't
   matter."
   [symbol & rest]
-  `(def ~symbol {:symbol '~symbol :reader (fn ~@rest)}))
+ `(def ~symbol (SyntaxMacro. '~symbol (fn ~@rest))))
