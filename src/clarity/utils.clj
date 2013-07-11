@@ -1,5 +1,5 @@
 (ns clarity.utils
-  (use [clarity.reader.macros :only [use-reader-macros]]))
+  (use [clarity.reader.macros :only [use-reader-macro]]))
 
 ;; ----------------
 ;; Inner namespaces
@@ -92,10 +92,14 @@
   See `colon`."
   [] (use-reader-macro colon))
 
+(def raw-string
+  "Reader macro for triple-quoted raw strings."
+  {:char \" :reader literal-string-reader})
+
 (defn use-raw-strings
   "Enable triple-quoted raw strings within the current
   namespace."
-  [] (use-reader-macro {:char \" :reader literal-string-reader}))
+  [] (use-reader-macro raw-string))
 
 ;; ------
 ;; Lambda
