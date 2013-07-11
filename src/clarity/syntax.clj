@@ -1,7 +1,7 @@
 (ns clarity.syntax
   (:refer-clojure :exclude [peek])
-  (use [clarity.reader macros utils]
-        clarity.utils))
+  (use [clarity.reader [hacking :exclude [queued queue]] utils]
+       [clarity.utils]))
 
 (defn ^:private current-ns
   "Return the name of the current
@@ -27,7 +27,15 @@
         :else
           (recur (conj chars char) brackets)))))
 
-(defonce ^:private symbol-table (atom {}))
+;; Currently only works when macros are unqualified
+(defn ^:private get-syntax-macros []
+  (->> (merge (ns-refers *ns*) (ns-interns *ns*))
+       (filter #(-> % val meta :syntax-macro))
+       (into {})))
+
+(defn get-macro [sym]
+  (if-let [m-var (sym (get-syntax-macros))]
+    (-> m-var deref .reader)))
 
 (defn ^:private symbol-dispatch
   "Called by the reader on encountering a
@@ -37,34 +45,21 @@
   (if (= ")" (str (peek reader)))
     (do (read-1 reader) ())
     (let [first (read-next reader)]
-      (if-let [f (get-in @symbol-table [(current-ns) first])]
+      (if-let [f (get-macro first)]
         (do
           (if (#{\space \newline} (peek reader)) (read-1 reader))
           (f (read-literal reader)))
         (conj (read-delimited-list \) reader) first)))))
 
-(defn use-symbol-macro [{:keys [symbol reader]}]
-  (swap! symbol-table assoc-in [(current-ns) symbol] reader)
-  (use-reader-macro {:char \( :reader symbol-dispatch}))
-
-(defn use-symbol-macros [& args]
-  (dorun (map use-symbol-macro args)))
-
-(defn use-syntax
-  "Takes one or more 'symbol macros' of
-  the form `{:symbol :reader}`, and enables
-  them for the current namespace."
-  [& args]
-  (apply use-symbol-macros args))
+(defn reader-macro-hook []
+  (set-reader-macro \( symbol-dispatch))
 
 (defntype SyntaxMacro [symbol reader]
   (fn [this & []]
     (throw
       (Exception.
         (str (.symbol this) " is a syntax macro "
-             "and can't be called as a function. "
-             "Please make sure you have enabled it "
-             "with (use-syntax " (.symbol this) ").")))))
+             "and can't be called as a function. ")))))
 
 (defmacro defsyntax
   "Creates a macro which operates on a string of
@@ -72,7 +67,6 @@
   with `use-syntax`.
   e.g.
     (defsyntax r [s] `(def ~'my-string ~(.toUpperCase s)))
-    (use-syntax r)
     (r hi there)
     (println my-string)
   ;=> HI THERE
@@ -81,4 +75,7 @@
   of the macro, although other brackets '{}[]' don't
   matter."
   [symbol & rest]
- `(def ~symbol (SyntaxMacro. '~symbol (fn ~@rest))))
+ `(def ~(vary-meta symbol assoc :syntax-macro true)
+        (SyntaxMacro. '~symbol (fn ~@rest))))
+
+; (reader-macro-hook)

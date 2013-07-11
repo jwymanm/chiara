@@ -52,9 +52,9 @@
 (defsyntax clarity [s]
   (-> s string-reader read-all seq (conj 'do)))
 
-(defn use-clarity
-  ([] (use-clarity true))
-  ([read-macros]
-    (use-syntax clarity)
-    (when read-macros
-      (use-reader-macros colon literal-string))))
+; (defn use-clarity
+;   ([] (use-clarity true))
+;   ([read-macros]
+;     (use-syntax clarity)
+;     (when read-macros
+;       (use-reader-macros colon literal-string))))
