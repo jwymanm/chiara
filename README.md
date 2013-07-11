@@ -105,14 +105,14 @@ defn foo [x]
   println x
   * x 2
 
-defn foo x (println x) (* x 2)
+defn foo [x] (println x) (* x 2)
 
 defn foo [x]
   (println x)
   let [y (* x 2)]
     y
 
-(defn foo x
+(defn foo [x]
   (println x)
   (* x 2))
 ```
