@@ -57,7 +57,7 @@
   [& args]
   (apply use-symbol-macros args))
 
-(defnrecord SyntaxMacro [symbol reader]
+(defntype SyntaxMacro [symbol reader]
   (fn [this & []]
     (throw
       (Exception.

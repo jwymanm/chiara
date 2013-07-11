@@ -245,3 +245,13 @@
         ~@(invoke-fns)
       ~@rest)
     (ns-unmap *ns* '~(deref fn-sym))))
+
+(defmacro defntype [name vars f & rest]
+  (reset! fn-sym (gensym "fn"))
+ `(do
+    (def ~(deref fn-sym) ~f)
+    (deftype ~name ~vars
+      clojure.lang.IFn
+        ~@(invoke-fns)
+      ~@rest)
+    (ns-unmap *ns* '~(deref fn-sym))))
