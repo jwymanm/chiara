@@ -1,8 +1,7 @@
 (ns clarity.core
   (:refer-clojure :exclude [peek])
-  (use [clarity.reader utils macros]
-        clarity.syntax
-        clarity.utils))
+  (use clarity.reader.utils
+       clarity.syntax))
 
 (defn seq' [form]
   (if (= (count form) 1)
