@@ -47,6 +47,8 @@ Given that Clarity relies on (or, relentlessly mangles) Clojure implementation d
 
 That said, it should be fairly stable and complete - I've used it for a few projects so far and it's working well. There may be (small) api changes before Clarity reaches 1.0.
 
+Contributions and suggestions of any kind are, of course, welcome.
+
 ## Other Functionality
 
 ### Reader macros
