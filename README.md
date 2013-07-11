@@ -1,6 +1,6 @@
 # Clarity
 
-Right now, s-expressions have too much syntax. Like semicolons, parentheses are great for parsers but often amount to line noise for us humans, who often rely instead on indentation to understand structure. When s-expressions are indented, the brackets are redundant - so why not get rid of them?
+S-Expressions have too much syntax. Like semicolons, parentheses are great for parsers but often amount to line noise for us humans, who rely instead on indentation to understand structure. The thing is, indentation is often unambiguous, making parantheses redundant - so why not get rid of them?
 
 Clarity is a Clojure project which lets you write this:
 
@@ -18,7 +18,7 @@ defn foo [x]
     range x
 ```
 
-Which looks a lot cleaner, to me at least. Clarity is based very on simple rules which are already used in standard Clojure code - so using it is almost always a simple matter of removing a few outer parens. It is also fully compatible with regular, bracketed s-exps, so if needed you can drop back to them whenever you want. (See below for more on Clarity's rules)
+It is based on very simple rules which are already used naturally in idiomatic code - so using it is almost always a simple matter of removing a few outer parens. It is also fully compatible with regular, bracketed s-exps, so if needed you can drop back to them whenever you want. (See below for more on Clarity's rules)
 
 ### Using Clarity
 
@@ -43,28 +43,28 @@ Files like this can then be `use/require`d from a repl or other namespaces as us
 
 ### Project status
 
-Clarity is pretty complete and has worked well for me so far. However, given that it relies on (read: relentlessly mangles) Clojure implementation details, it should really be considered experimental and not used in mission-critical code.
+Given that Clarity relies on (or, relentlessly mangles) Clojure implementation details, it should really be considered experimental and not used in mission-critical code.
 
-There may be (small) api changes before Clarity reaches 1.0.
+That said, it should be fairly stable and complete - I've used it for a few projects so far and it's working well. There may be (small) api changes before Clarity reaches 1.0.
 
 ## Other Functionality
 
 ### Reader macros
 
-Clarity isn't meant as a reader macro library, but they were necessary for the project, so are included. Clarity enables with a novel form of reader macros, called syntax macros (in `clarity.syntax`), which are essentially like normal macros except that they recieve their body as a string instead of structured data.
+Clarity isn't meant as a reader macro library, but they were necessary for the project, so are included. `clarity.syntax` enables a novel form of reader macros, called syntax macros, which are essentially like normal macros except that they recieve their body as a string instead of structured data.
 
 ```clj
-  (ns user
-    (use clarity.syntax))
+(ns user
+  (use clarity.syntax))
 
-  (defsyntax r [s]
-    `(println ~(.toUpperCase s)))
+(defsyntax r [s]
+  `(println ~(.toUpperCase s)))
 
-  (use-syntax r)
+(use-syntax r)
 
-  (r hello @you)
+(r say "hi")
 
-;=> HELLO @YOU
+;=> SAY "HI"
 ```
 
 Clarity also enables more familiar character-dispatch + stream reader macros in `clarity.reader.macros`. See `clarity.utils` below for an example.
@@ -73,12 +73,24 @@ Clarity also enables more familiar character-dispatch + stream reader macros in 
 
 ```clj
   (keys (ns-publics 'clarity.utils))
-;=> (symbol-extract i-str defnrecord queued inner-namespace quote* defntype queue colon literal-string λ infix)
+;=> (symbol-extract i-str defnrecord queued inner-namespace quote* defntype queue colon use-raw-strings λ infix)
 ```
 
 `clarity.utils` contains a few useful and irrelevant things. Their docstrings are the best reference, but a couple are worth mentioning.
 
-TODO
+`literal-string` is a reader macro that provides raw triple-quoted strings, e.g.
+
+```clj
+  (use-raw-strings)
+
+  (do """say "hi" \to me""")
+;=> "say \"hi\" \\to me"
+
+  (println *1)
+;=> say "hi" \to me
+```
+
+It is included by default when you `(use-clarity)`.
 
 ### Clarity's rules
 
@@ -98,7 +110,7 @@ defn foo x (println x) (* x 2)
 defn foo [x]
   (println x)
   let [y (* x 2)]
-    x
+    y
 
 (defn foo x
   (println x)
