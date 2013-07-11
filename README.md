@@ -22,7 +22,7 @@ It is based on very simple rules which are already used naturally in idiomatic c
 
 ### Using Clarity
 
-Clarity is easy to use. Just add `[clarity "0.1.0"]` to your project, call `(clarity.core/use-clarity)` and then write code within the `clarity` macro, for example:
+Clarity is easy to use. Just add `[one-more-minute/clarity "0.1.0"]` to your project, call `(clarity.core/use-clarity)` and then write code within the `clarity` macro, for example:
 
 ```clj
 ;; user.clj
