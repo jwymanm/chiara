@@ -1,24 +1,38 @@
 # Clarity
 
-S-Expressions have too much syntax. Like semicolons, parentheses are great for parsers but often amount to line noise for us humans, who rely instead on indentation to understand structure. The thing is, indentation is often unambiguous, making parantheses redundant - so why not get rid of them?
-
-Clarity is a Clojure project which lets you write this:
+If you've written or read any substantial amount of Clojure, you'll have noticed that forms take on a *very* regular visual structure. For example, taken verbatim from clojure core:
 
 ```clj
-(defn foo [x]
-  (map inc
-    (range x)))
+(defn take-while
+  "Returns a lazy sequence of successive items from coll while
+  (pred item) returns true. pred must be free of side-effects."
+  [pred coll]
+  (lazy-seq
+   (when-let [s (seq coll)]
+       (when (pred (first s))
+         (cons (first s) (take-while pred (rest s)))))))
 ```
 
-like this:
+Look at virtually any Clojure function and you'll see that its structure, and thus its meaning, is made through layout - lists start on new lines, with the list's elements continuing on the same line or continuing on new lines with an indent.
+
+This formatting is regular enough, in fact, that the a lot of the parentheses are redundant; we could get rid of them, like this, and the structure of the expression remains clear and unambiguous.
 
 ```clj
-defn foo [x]
-  map inc
-    range x
+defn take-while
+  "Returns a lazy sequence of successive items from coll while
+  (pred item) returns true. pred must be free of side-effects."
+  [pred coll]
+  lazy-seq
+   when-let [s (seq coll)]
+       when (pred (first s))
+         cons (first s) (take-while pred (rest s))
 ```
 
-It is based on very simple rules which are already used naturally in idiomatic code - so using it is almost always a simple matter of removing a few outer parens. It is also fully compatible with regular, bracketed s-exps, so if needed you can drop back to them whenever you want. (See below for more on Clarity's rules)
+If you're anything like me looking at this for the first time, you might just be thinking that this actually looks pretty readable; nicer and less noisy than the original, even. So if it's easier on the eyes, and a computer can read it, why not write our code like this?
+
+Clarity is, in a nutshell, a way to write Clojure with a reduced number of parentheses. It's actually very simple - where brackets are redundant, as in the previous example, it will allow you to omit them completely, and will then effectively interpret the expression as if they were present. Note that, Clarity doesn't force anything on you.
+
+Readability means reducing the amount your brain has to process to infer meaning; getting rid of a few redundant parens may not seem like a big deal, but it can make a big difference.
 
 ### Using Clarity
 
@@ -33,21 +47,22 @@ Clarity is easy to use. Just add `[one-more-minute/clarity "0.1.0"]` to your pro
 (clarity
 
 defn foo [x]
-  map inc
-    range x
+  map inc (range x)
 
 )
 ```
 
 Files like this can then be `use/require`d from a repl or other namespaces as usual.
 
-### Project status
+### But Why?
 
-Given that Clarity relies on (or, relentlessly mangles) Clojure implementation details, it should really be considered experimental and not used in mission-critical code.
+Clarity is only a convenience, and a small one at that. It won't make you a faster or better programmer, it won't make lisp more accessible if you don't already understand it, it isn't really "necessary" in any sense - it isn't and never will be intended to do any of those things. It will, however, do what it was designed to do very well - provide a small extra facility for making your code as readable as possible (which is what we want, right?).
 
-That said, it should be fairly stable and complete - I've used it for a few projects so far and it's working well. There may be (small) api changes before Clarity reaches 1.0.
+Of course, a small convenience isn't worthwhile if it places any restraints the language's flexibility - but it simply doesn't, since it takes nothing away from Clojure's original syntax and semantics.
 
-Contributions and suggestions of any kind are, of course, welcome.
+So the real reason you should use Clarity is simply that if you think it can at all enhance readability, there's no reason not to.
+
+(Of course, there will always be the Lisp Purists, adamant that code is not Real Code™ unless it *always* comes carefully wrapped in bracket-shaped comfort blankets, and that's fine too - readability is a subjective matter after all - but if that describes you then this libary is probably not for you)
 
 ## Other Functionality
 
@@ -92,15 +107,15 @@ Clarity also enables more familiar character-dispatch + stream reader macros in 
 ;=> say "hi" \to me
 ```
 
-It is included by default when you `(use-clarity)`.
+It is included by default when you `(use-clarity)`, but note that this reader macro (or indeed any other) can be happily used in regular Clojure, as shown is above.
 
-### Clarity's rules
+### Clarity's rules, more formally.
 
 Clarity's structure is simple and intuitive - it's already used in idiomatic clojure. Formally, a list begins with an element (e.g. `defn` below) on a new line. The elements of the list are the elements on that line, followed by any elements directly below which have a higher indentation.
 
 The only exception to this is that elements on their own are treated as themselves (as opposed to lists of one item).
 
-If it sounds complicated, it's best to see it in action; the following definitions are all equivalent:
+If it sounds complicated, it's best to see it in action; the following definitions are all equivalent, all idiomatic Clojure layouts (minus parens), and all valid Clarity.
 
 ```clj
 defn foo [x]
