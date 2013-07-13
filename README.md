@@ -54,19 +54,11 @@ defn foo [x]
 
 Files like this can then be `use/require`d from a repl or other namespaces as usual.
 
-### But Why?
-
-Clarity is only a convenience, and a small one at that. It won't make you a faster or better programmer, it won't make lisp more accessible if you don't already understand it, and no, it's not really "necessary" - but it isn't and never will be intended to do any of those things. It will, however, do what it was designed to do very well - provide a small extra facility for getting rid of redundancy and making your code as readable as possible (which is what we want, right?).
-
-Of course, a small convenience isn't worthwhile if it places any restraints the language's flexibility - but Clarity simply doesn't, since it takes nothing away from Clojure's original syntax and semantics. So the *real* reason you should use Clarity is, simply, that if you think it can at all enhance readability, there's no reason not to.
-
-(Of course, there will always be the Lisp Purists, those adamant that code is not Real Code™ unless it *always* comes carefully wrapped in bracket-shaped comfort blankets, and that's fine too - readability is a subjective matter after all - but this library is not for those people).
-
 ## Other Functionality
 
 ### Reader macros
 
-Clarity isn't meant as a reader macro library, but they were necessary for the project, so are included. `clarity.syntax` enables a novel form of reader macros, called syntax macros, which are essentially like normal macros except that they recieve their body as a string instead of structured data.
+Clarity isn't meant as a reader macro library, but they were necessary for the project, so are included. `clarity.syntax` enables a novel form of reader macros, called syntax macros, which are essentially like normal macros except that they receive their body as a string instead of structured data.
 
 ```clj
 (ns user
@@ -131,3 +123,11 @@ defn foo [x]
   (println x)
   (* x 2))
 ```
+
+### But Why?
+
+Clarity is admittedly only a convenience, and a relatively small one at that. It won't make you a faster or better programmer, it won't make lisp more accessible if you don't already understand it, and no, it's not really "necessary" - but it isn't and never will be intended to do any of those things. It will, however, do what it was designed to do very well - provide a small extra facility for getting rid of redundancy and making your code as readable as possible (which is what we want, right?).
+
+Of course, a small convenience isn't worthwhile if it places any restraints the language's flexibility - but Clarity simply doesn't, since it takes nothing away from Clojure's original syntax and semantics. So the *real* reason you should use Clarity is, simply, that if you think it can at all enhance readability, there's no reason not to.
+
+(Of course, there will always be the Lisp Purists, those adamant that code is not Real Code™ unless it *always* comes carefully wrapped in bracket-shaped comfort blankets, and that's fine too - readability is a subjective matter after all - but this library is not for those people).
