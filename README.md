@@ -36,7 +36,7 @@ Readability means reducing the amount your brain has to process to infer meaning
 
 ### Using Clarity
 
-Clarity is easy to use. Just add `[one-more-minute/clarity "0.1.0"]` to your project, call `(clarity.core/use-clarity)` and then write code within the `clarity` macro, for example:
+Clarity is easy to use. Just add `[one_more_minute/clarity "0.1.1"]` to your project, call `(clarity.core/use-clarity)` and then write code within the `clarity` macro, for example:
 
 ```clj
 ;; user.clj
