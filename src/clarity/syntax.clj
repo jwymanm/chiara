@@ -54,7 +54,7 @@
 (defn reader-macro-hook []
   (set-reader-macro \( symbol-dispatch))
 
-(defntype SyntaxMacro [symbol reader]
+(defnrecord SyntaxMacro [symbol reader]
   (fn [this & []]
     (throw
       (Exception.

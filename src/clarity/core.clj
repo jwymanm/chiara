@@ -57,4 +57,4 @@
 ;   ([read-macros]
 ;     (use-syntax clarity)
 ;     (when read-macros
-;       (use-reader-macros colon literal-string))))
+;       (use-reader-macros colon raw-string))))

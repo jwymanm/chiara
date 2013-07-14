@@ -1,75 +1,124 @@
-(ns clarity.utils)
+(ns clarity.utils
+  (use [clarity.reader [utils :rename {peek rpeek}] macros]))
 
 ;; ----------------
 ;; Inner namespaces
 ;; ----------------
 
-(defmacro inner-namespace [name & forms]
-  (let [outer-ns (ns-name *ns*)
-        inner-ns (symbol (str outer-ns "." name))]
-   `(do
-      (if (find-ns '~inner-ns)
-        (in-ns '~inner-ns)
-        (ns ~inner-ns))
-      ~@forms
-      (in-ns '~outer-ns)
-      (use '~inner-ns))))
+; (defmacro inner-namespace
+;   "Provides an alternative to private vars
+;   to avoid cluttering namespace exports.
+;   For example,
+;     (ns user)
+;     (inner-ns constants
+;       (def x 5))
+;     (println x) ;=> 5
+
+;   The forms within inner-ns are evaluated
+;   with a new namespace user.constants, and
+;   refered into the current namespace user -
+;   so x here is actually `user.constants/x`.
+
+;   This is especially useful for macro helper
+;   functions, which can't be private."
+;   [name & forms]
+;   (let [outer-ns (ns-name *ns*)
+;         inner-ns (symbol (str outer-ns "." name))]
+;    `(do
+;       (if (find-ns '~inner-ns)
+;         (in-ns '~inner-ns)
+;         (ns ~inner-ns))
+;       ~@forms
+;       (in-ns '~outer-ns)
+;       (use '~inner-ns))))
 
 ;; -------------
 ;; Reader macros
 ;; -------------
 
-(inner-namespace reader-macros
-  (use '[clarity.reader [utils :rename {peek rpeek}] macros])
-  (import clojure.lang.Util)
+(import clojure.lang.Util)
 
-  (defn colon-reader [reader c]
-    (let [next (read-1 reader)]
-      (if-not (= next \space)
-        ; Keyword
-        (do
-          (unread reader next)
-          (-> reader read-next keyword))
-        ; Implicit bracket
-        (loop [list []
-               c    (read-1 reader)]
-          (cond
-            (#{\space \,} (char c)) (recur list (read-1 reader))
-            (#{"\n" ")" "]" "}" nil} (str (char c))) (do (unread reader c) (seq list))
-            :else                  (do
-                                     (unread reader c)
-                                     (recur (conj list (read reader))
-                                            (read-1 reader))))))))
+(defn ^:private colon-reader [reader c]
+  (let [next (read-1 reader)]
+    (if-not (= next \space)
+      ; Keyword
+      (do
+        (unread reader next)
+        (-> reader read-next keyword))
+      ; Implicit bracket
+      (loop [list []
+             c    (read-1 reader)]
+        (cond
+          (#{\space \,} (char c)) (recur list (read-1 reader))
+          (#{"\n" ")" "]" "}" nil} (str (char c))) (do (unread reader c) (seq list))
+          :else                  (do
+                                   (unread reader c)
+                                   (recur (conj list (read reader))
+                                          (read-1 reader))))))))
 
-  (defn read-literal [reader end]
-    (loop [s ""]
-      (if (.endsWith s end)
-        (.substring s 0 (- (.length s) (.length end)))
-        (if (rpeek reader)
-          (recur (str s (read-1 reader)))
-          (Util/runtimeException "EOF while reading literal string.")))))
+(defn ^:private read-literal [reader end]
+  (loop [s ""]
+    (if (.endsWith s end)
+      (.substring s 0 (- (.length s) (.length end)))
+      (if (rpeek reader)
+        (recur (str s (read-1 reader)))
+        (Util/runtimeException "EOF while reading literal string.")))))
 
-  (defn literal-string-reader [reader _]
-    (let [string-reader (get-default-macro \")]
-      (if-not (= (rpeek reader) \")
-        (string-reader reader (int \"))
-        (do
-          (read-1 reader)
-          (if-not (= (rpeek reader) \")
-            ""
-            (do
-              (read-1 reader)
-              (read-literal reader "\"\"\"")))))))
-)
+(defn ^:private literal-string-reader [reader _]
+  (let [string-reader (get-default-macro \")]
+    (if-not (= (rpeek reader) \")
+      (string-reader reader (int \"))
+      (do
+        (read-1 reader)
+        (if-not (= (rpeek reader) \")
+          ""
+          (do
+            (read-1 reader)
+            (read-literal reader "\"\"\"")))))))
 
-(def colon {:char \: :reader colon-reader})
-(def literal-string {:char \" :reader literal-string-reader})
+(def colon
+  "Reader macro. Wraps forms to the right of it
+  in brackets e.g.
+    (map inc : range 10) => (map inc (range 10))
+  Will insert the right bracket either at the
+  next unmatched bracket or at the end of the
+  line, whichever makes sense."
+  {:char \: :reader colon-reader})
+(defn use-colon
+  "Enable the : macro in the current namespace.
+  See `colon`."
+  [] (use-reader-macro colon))
+
+(def raw-string
+  "Reader macro for triple-quoted raw strings."
+  {:char \" :reader literal-string-reader})
+
+(defn use-raw-strings
+  "Enable triple-quoted raw strings within the current
+  namespace."
+  [] (use-reader-macro raw-string))
 
 ;; ------
 ;; Lambda
 ;; ------
 
-(defmacro λ [& exprs]
+(defmacro λ
+  "A smart replacement for both fn and #(),
+  avoiding common pitfalls of the reader macro.
+  If no parameter list if given:
+    * A body which is a single form will be
+      given an implicit do.
+    * The fn won't complain about arity.
+
+  A parameter list is interpreted if there is
+  more than one form and the first is a vector.
+  e.g.
+  ((λ println %) :hi)   => :hi
+  ((λ (println %)) :hi) => :hi
+  ((λ [% %2]) 1 2 3)    => [1 2]
+  ((λ 1) :arg)          => 1
+  ((λ [x y] y) 1 3)     => 3"
+  [& exprs]
   (let [[args body] (if (and (> (count exprs) 1)
                              (= clojure.lang.PersistentVector (-> exprs first class)))
                       [(first exprs) (rest exprs)]
@@ -86,32 +135,29 @@
 ;; Infix
 ;; -----
 
-(inner-namespace infix
+(defn ^:private list?' [form]
+  (or (list? form)
+      (= (type form) clojure.lang.LazySeq)
+      (= (type form) clojure.lang.Cons)))
 
-  (defn list?' [form]
-    (or (list? form)
-        (= (type form) clojure.lang.LazySeq)
-        (= (type form) clojure.lang.Cons)))
+(defn ^:private infix-sym [form]
+  (cond
+    (and (symbol? form) (not (re-find #"[a-zA-Z0-9]" (name form))))
+      form
+    (and (list?' form) (= (count form) 2) (= (first form) 'quote))
+      (second form)))
 
-  (defn infix-sym [form]
-    (cond
-      (and (symbol? form) (not (re-find #"[a-zA-Z0-9]" (name form))))
-        form
-      (and (list?' form) (= (count form) 2) (= (first form) 'quote))
-        (second form)))
+(defn ^:private infixify* [[first second & rest :as list]]
+  (if-not (infix-sym first)
+    (if-let [second (infix-sym second)]
+      (concat [second first] rest)
+      list)
+    list))
 
-  (defn infixify* [[first second & rest :as list]]
-    (if-not (infix-sym first)
-      (if-let [second (infix-sym second)]
-        (concat [second first] rest)
-        list)
-      list))
-
-  (defn infixify [form]
-    (if (list?' form)
-      (map infixify (infixify* form))
-      form))
-)
+(defn infixify [form]
+  (if (list?' form)
+    (map infixify (infixify* form))
+    form))
 
 (defmacro infix
   "Walks over its argument forms, infixing them.
@@ -136,29 +182,26 @@
 
 ;; Implementation of `quote` with unquoting
 
-(inner-namespace quote
+(defn seqable? [e]
+  (if-not (string? e)
+    (try (seq e)
+      (catch Exception e false))))
 
-  (defn seqable? [e]
-    (if-not (string? e)
-      (try (seq e)
-        (catch Exception e false))))
+(defn empty' [coll]
+  (if (= (type coll) clojure.lang.MapEntry)
+    []
+    (empty coll)))
 
-  (defn empty' [coll]
-    (if (= (type coll) clojure.lang.MapEntry)
-      []
-      (empty coll)))
+(defn unquote-form? [expr]
+  (and (seq? expr)
+       (= (first expr) `unquote)))
 
-  (defn unquote-form? [expr]
-    (and (seq? expr)
-         (= (first expr) `unquote)))
-
-  (defn unquote-splicing-form? [expr]
-    (and (seq? expr)
-         (= (first expr) `unquote-splicing)))
-)
+(defn unquote-splicing-form? [expr]
+  (and (seq? expr)
+       (= (first expr) `unquote-splicing)))
 
 (defmacro quote*
-  "Like quote, but supports unquote (`~`, `~@`)."
+  "Like quote, but supports unquoting (`~`, `~@`)."
   [expr]
   (cond
     (unquote-form? expr) (second expr)
@@ -177,7 +220,13 @@
 
 ;; Planned: ability to extract forms e.g. "~(range 10)"
 
-(defn symbol-extract [s]
+(defn symbol-extract
+  "Takes a string with unquoted vars
+  e.g. \"a b ~c d\"
+  and turns it into a list of string
+  and symbols
+  e.g. (\"a b \" c \"d\") "
+  [s]
   (map #(if-let [n (second (re-find #"\A\~([\w\-]+)\Z" %))]
                   (symbol n)
                   %)
@@ -197,7 +246,10 @@
 ;; Queues
 ;; ------
 
-(defn queue [] (atom []))
+(defn queue
+  "Create a queue object to pass into
+  `queued`."
+  [] (atom []))
 
 (defmacro queued
   "`queued` code blocks will wait for each other
@@ -221,20 +273,17 @@
 ;; Records as fns
 ;; --------------
 
-(inner-namespace defnrecord
+(def ^:private fn-sym (atom 'f))
 
-  (def fn-sym (atom 'f))
+(defn ^:private sym-list [n]
+  (->> (range n) (map inc) (map #(str "arg" %)) (map symbol)))
 
-  (defn sym-list [n]
-    (->> (range n) (map inc) (map #(str "arg" %)) (map symbol)))
+(defn ^:private invoke-fn [n]
+  (let [syms (sym-list n)]
+    `(~'invoke [~'this ~@syms] (~(deref fn-sym) ~'this ~@syms))))
 
-  (defn invoke-fn [n]
-    (let [syms (sym-list n)]
-      `(~'invoke [~'this ~@syms] (~(deref fn-sym) ~'this ~@syms))))
-
-  (defn invoke-fns []
-    (map invoke-fn (range 20)))
-)
+(defn ^:private invoke-fns []
+  (map invoke-fn (range 20)))
 
 (defmacro defnrecord [name vars f & rest]
   (reset! fn-sym (gensym "fn"))
