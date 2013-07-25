@@ -17,6 +17,7 @@
     (let [char (read-1 reader)]
       (cond
         (not char)
+          ; Should throw eof
           (read reader)
         (= "(" (str char))
           (recur (conj chars char) (inc brackets))
@@ -40,7 +41,7 @@
       (if-let [f (get-in @symbol-table [(current-ns) first])]
         (do
           (if (#{\space \newline} (peek reader)) (read-1 reader))
-          (f (read-literal reader)))
+          (f reader))
         (conj (read-delimited-list \) reader) first)))))
 
 (defn use-symbol-macro [{:keys [symbol reader]}]
@@ -56,6 +57,10 @@
   them for the current namespace."
   [& args]
   (apply use-symbol-macros args))
+
+(defn wrap-read-literal [f]
+  (fn [reader]
+    (f (read-literal reader))))
 
 (defnrecord SyntaxMacro [symbol reader]
   (fn [this & []]
@@ -81,4 +86,7 @@
   of the macro, although other brackets '{}[]' don't
   matter."
   [symbol & rest]
- `(def ~symbol (SyntaxMacro. '~symbol (fn ~@rest))))
+ `(def ~symbol
+    (SyntaxMacro. '~symbol
+      (~(if (-> symbol meta :stream) `do `wrap-read-literal)
+          (fn ~@rest)))))
