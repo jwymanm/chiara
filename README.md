@@ -32,7 +32,7 @@ If you're anything like me looking at this for the first time, you might just be
 
 Clarity is, in a nutshell, a way to write Clojure with a reduced number of parentheses. It's actually very simple - where brackets are redundant, as in the previous example, it will allow you to omit them completely, and will then interpret the expression as if they were present. This is always optional, though - Clarity doesn't force anything on you.
 
-Readability means reducing the amount your brain has to process to infer meaning; getting rid of a few redundant parens may not seem like a big deal, but it can make a big difference.
+Readability means reducing the amount your brain has to process to infer meaning; getting rid of a few redundant parens may not seem like a big deal, but it can make a big difference. It also makes structural editing far easier, without having to learn / rely on tools like paredit.
 
 ### Using Clarity
 
