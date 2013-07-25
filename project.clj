@@ -1,4 +1,4 @@
-(defproject one_more_minute/clarity "0.1.1"
+(defproject chiara "0.2.0-SNAPSHOT"
   :description "Better S-Expressions"
   :url "https://github.com/one-more-minute/clarity/"
   :license {:name "Eclipse Public License"
