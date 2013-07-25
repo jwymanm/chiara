@@ -32,7 +32,7 @@ If you're anything like me looking at this for the first time, you might just be
 
 Clarity is, in a nutshell, a way to write Clojure with a reduced number of parentheses. It's actually very simple - where brackets are redundant, as in the previous example, it will allow you to omit them completely, and will then interpret the expression as if they were present. This is always optional, though - Clarity doesn't force anything on you.
 
-Readability means reducing the amount your brain has to process to infer meaning; getting rid of a few redundant parens may not seem like a big deal, but it can make a big difference.
+Readability means reducing the amount your brain has to process to infer meaning; getting rid of a few redundant parens may not seem like a big deal, but it can make a big difference. It also makes structural editing far easier, without having to learn / rely on tools like paredit.
 
 ### Using Clarity
 
@@ -101,7 +101,9 @@ It is included by default when you `(use-clarity)`, but note that this reader ma
 
 ### Clarity's rules, more formally.
 
-Clarity's structure is simple and intuitive - it's already used in idiomatic clojure. Formally, a list begins with an element (e.g. `defn` below) on a new line. The elements of the list are the elements on that line, followed by any elements directly below which have a higher indentation.
+Clarity's structure is simple and intuitive - remember, the idea isn't to rewrite your code with a new syntax, but simply to remove a few outer brackets from what you've already written.
+
+The indentation rules are the same used implicity in idiomatic clojure - formally, a list begins with an element (e.g. `defn` below) on a new line. The elements of the list are the elements on that line, followed by any elements directly below which have a higher indentation. This works recursively, until a regular bracketed form is encountered, which will be read in by the regular clojure read - so Clarity will have no effect inside parentheses.
 
 The only exception to this is that elements on their own are treated as themselves (as opposed to lists of one item).
 
@@ -123,11 +125,3 @@ defn foo [x]
   (println x)
   (* x 2))
 ```
-
-### But Why?
-
-Clarity is admittedly only a convenience, and a relatively small one at that. It won't make you a faster or better programmer, it won't make lisp more accessible if you don't already understand it, and no, it's not really "necessary" - but it isn't and never will be intended to do any of those things. It will, however, do what it was designed to do very well - provide a small extra facility for getting rid of redundancy and making your code as readable as possible (which is what we want, right?).
-
-Of course, a small convenience isn't worthwhile if it places any restraints the language's flexibility - but Clarity simply doesn't, since it takes nothing away from Clojure's original syntax and semantics. So the *real* reason you should use Clarity is, simply, that if you think it can at all enhance readability, there's no reason not to.
-
-(Of course, there will always be the Lisp Purists, those adamant that code is not Real Code™ unless it *always* comes carefully wrapped in bracket-shaped comfort blankets, and that's fine too - readability is a subjective matter after all - but this library is not for those people).
