@@ -38,20 +38,15 @@
           (recur (conj form (read-next reader)) (read-whitespace reader)))
         [(seq' form) 0]))))
 
-(defn read-all [reader]
-  (loop [form []]
-    (read-whitespace reader)
-    (if (peek reader)
-      (recur (conj form (read-clarity reader)))
-      form)))
+(defn read-to-bracket [reader]
+  (read-whitespace reader)
+  (if (= (str (peek reader)) ")")
+    (do (read-1 reader) ())
+    (let [next (read-clarity reader)]
+      (conj (read-all reader) next))))
 
-(defn clarity-reader [reader char]
-  (if (= (read-1 reader) \:)
-    (conj (seq (read-all reader)) 'do)
-    (read-clarity reader)))
-
-(defsyntax clarity [s]
-  (-> s string-reader read-all seq (conj 'do)))
+(defsyntax ^:stream clarity [reader]
+  (-> reader read-all (conj 'do)))
 
 (defn use-clarity
   ([] (use-clarity true))
