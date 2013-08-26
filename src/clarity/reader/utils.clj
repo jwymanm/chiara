@@ -32,3 +32,10 @@
     char))
 
 (defn read-next [reader] (read reader))
+
+(defn discard-line [reader]
+  (while (not= (read-1 reader) \newline)))
+
+(defn reader-position [rdr]
+  (if (instance? clojure.lang.LineNumberingPushbackReader rdr)
+    [(-> rdr .getLineNumber int) (-> rdr .getColumnNumber dec int)]))
