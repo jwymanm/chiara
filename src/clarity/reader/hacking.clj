@@ -1,4 +1,6 @@
-(ns clarity.reader.hacking)
+(ns clarity.reader.hacking
+  (:import [java.lang Class]
+           [clojure.lang IFn]))
 
 ;; Queue (copied from utils to avoid circular dependancy)
 
@@ -15,7 +17,7 @@
 
 ;; Begin functions of unimaginable evil
 
-(defn get-field [class field]
+(defn get-field [^Class class field]
   (-> (doto (.getDeclaredField class (name field))
             (.setAccessible true))
       (.get nil)))
@@ -26,7 +28,9 @@
        (filter second)
        (into {})))
 
-(defonce macros (get-field clojure.lang.LispReader :macros))
+(def ArrayOfIFn (Class/forName "[Lclojure.lang.IFn;"))
+
+(defonce ^ArrayOfIFn macros (get-field clojure.lang.LispReader :macros))
 (defonce default-macros (array->map macros))
 
 (defn reset-macros
