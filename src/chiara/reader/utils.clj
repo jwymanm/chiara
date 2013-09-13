@@ -1,4 +1,4 @@
-(ns clarity.reader.utils
+(ns chiara.reader.utils
   (:refer-clojure :exclude [peek])
   (import [clojure.lang Util LispReader LineNumberingPushbackReader]
           [java.io StringReader PushbackReader]))

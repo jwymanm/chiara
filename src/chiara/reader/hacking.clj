@@ -1,17 +1,5 @@
-(ns clarity.reader.hacking)
-
-;; Queue (copied from utils to avoid circular dependancy)
-
-(defn queue [] (atom []))
-
-(defmacro queued
-  [q & exprs]
- `(let [id# (last (swap! ~q #(conj % (inc (or (last %) 0)))))]
-    (while (not= id# (first @~q))
-      (Thread/sleep 10))
-    (let [result# (do ~@exprs)]
-      (swap! ~q subvec 1)
-      result#)))
+(ns chiara.reader.hacking
+  (use chiara.threading))
 
 ;; Begin functions of unimaginable evil
 

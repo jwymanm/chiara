@@ -1,7 +1,7 @@
-(ns clarity.syntax
+(ns chiara.syntax
   (:refer-clojure :exclude [peek])
-  (use [clarity.reader macros utils]
-        clarity.utils))
+  (use [chiara.reader macros utils]
+        chiara.macros))
 
 (defn ^:private current-ns
   "Return the name of the current

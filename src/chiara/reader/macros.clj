@@ -1,7 +1,7 @@
-(ns clarity.reader.macros
+(ns chiara.reader.macros
   (:refer-clojure :exclude [peek])
-  (use clarity.reader.hacking
-       clarity.reader.utils))
+  (use chiara.reader.hacking
+       chiara.reader.utils))
 
 (defn get-default-macro
   "Get the default reader macro associated
