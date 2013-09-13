@@ -1,6 +1,5 @@
 (ns clarity.reader.hacking
-  (:import [java.lang Class]
-           [clojure.lang IFn]))
+  (import java.lang.Class))
 
 ;; Queue (copied from utils to avoid circular dependancy)
 

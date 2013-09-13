@@ -66,10 +66,10 @@
   (fn [this & []]
     (throw
       (Exception.
-        (str (symbol this) " is a syntax macro "
+        (str (:symbol this) " is a syntax macro "
              "and can't be called as a function. "
              "Please make sure you have enabled it "
-             "with (use-syntax " (symbol this) ").")))))
+             "with (use-syntax " (:symbol this) ").")))))
 
 (defmacro defsyntax
   "Creates a macro which operates on a string of

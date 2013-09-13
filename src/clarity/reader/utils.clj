@@ -15,7 +15,7 @@
 (defn read-1
   "Remove and return a single char
   from the reader, or `nil`."
-  [^StringReader reader]
+  [^PushbackReader reader]
   (let [c (.read reader)]
     (if (= -1 c) nil (char c))))
 
@@ -33,11 +33,9 @@
 
 (defn read-next [reader] (read reader))
 
-(defn discard-line [^StringReader reader]
+(defn discard-line [^PushbackReader reader]
   (while (not= (read-1 reader) \newline)))
 
-(defn reader-position [reader]
-  (if (instance? LineNumberingPushbackReader reader)
-    (let [lnp-reader ^LineNumberingPushbackReader reader]
-      [(-> lnp-reader .getLineNumber int)
-       (-> lnp-reader .getColumnNumber dec int)])))
+(defn reader-position [^LineNumberingPushbackReader reader]
+  [(-> reader .getLineNumber int)
+   (-> reader .getColumnNumber dec int)])
