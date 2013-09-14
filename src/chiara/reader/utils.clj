@@ -37,5 +37,6 @@
   (while (not= (read-1 reader) \newline)))
 
 (defn reader-position [^LineNumberingPushbackReader reader]
-  [(-> reader .getLineNumber int)
-   (-> reader .getColumnNumber dec int)])
+  (if (instance? LineNumberingPushbackReader reader)
+    [(-> reader .getLineNumber int)
+     (-> reader .getColumnNumber dec int)]))
