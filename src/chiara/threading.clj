@@ -18,11 +18,12 @@
 
     (def q (queue))
     (time (dorun (pmap #(queued q (Thread/sleep 100) %) (range 10))))
-   ;=> Elapsed time: 1090.702535 msecs"
+   ;=> Elapsed time: 1009.702535 msecs"
   [q & exprs]
  `(let [id# (last (swap! ~q #(conj % (inc (or (last %) 0)))))]
     (while (not= id# (first @~q))
-      (Thread/sleep 10))
-    (let [result# (do ~@exprs)]
-      (swap! ~q subvec 1)
-      result#)))
+      (Thread/sleep 1))
+    (try
+      ~@exprs
+      (finally
+        (swap! ~q subvec 1)))))

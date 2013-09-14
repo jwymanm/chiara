@@ -58,8 +58,9 @@
  `(queued reader-queue
     (let [old# (get-reader-macro ~char)]
       (set-reader-macro ~char ~macro)
-      (let [result# (do ~@forms)]
-        (set-reader-macro ~char old#)
-        result#))))
+      (try
+        ~@forms
+        (finally
+          (set-reader-macro ~char old#))))))
 
 ;; End functions of unimaginable evil
