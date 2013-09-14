@@ -84,8 +84,8 @@
                                    (recur (conj list (read reader))
                                           (read-1 reader))))))))
 
-(defn ^:private read-literal [reader end]
-  (loop [s ""]
+(defn ^:private read-literal [reader ^String end]
+  (loop [^String s ""]
     (if (.endsWith s end)
       (.substring s 0 (- (.length s) (.length end)))
       (if (peek reader)
