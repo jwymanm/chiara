@@ -2,11 +2,11 @@
 
 Lisp is, in general, a poor language for expressing maths; For example, a polynomial which could be written in Julia as
 
-  3x^2 + 2x + 1
+    3x^2 + 2x + 1
 
 must be written in Lisp as
 
-  (+ (* 3 (^ x 2)) (* 2 x) 1)
+    (+ (* 3 (^ x 2)) (* 2 x) 1)
 
 This is pretty uncontroversial.
 
