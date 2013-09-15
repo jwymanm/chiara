@@ -58,7 +58,7 @@ defn take-while
          cons (first s) (take-while pred (rest s))
 ```
 
-To read more about Chiara's rules and features please see [Chiara.md](doc/Chiara.md).
+To read more about Chiara's rules and features please see [Chiara.md](doc/Chiara.md). You may also be interested in my proposal for infix syntax, at [Infix.md](doc/Infix.md).
 
 ## The DSL library
 
