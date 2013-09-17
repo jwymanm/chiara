@@ -1,7 +1,7 @@
 # Chiara
 
 ```clj
-[chiara "0.2.0"]
+[chiara "0.2.0-SNAPSHOT"]
 ```
 
 Chiara is a package for Clojure which includes a powerful library for creating DSLs (complete with reader macros and other goodies), as well as an indentation-based syntax for S-Expressions.
