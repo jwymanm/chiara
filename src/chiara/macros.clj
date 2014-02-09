@@ -4,16 +4,11 @@
 ;; Infix
 ;; -----
 
-(defn ^:private list?' [form]
-  (or (list? form)
-      (= (type form) clojure.lang.LazySeq)
-      (= (type form) clojure.lang.Cons)))
-
 (defn ^:private infix-sym [form]
   (cond
     (and (symbol? form) (not (re-find #"[a-zA-Z0-9]" (name form))))
       form
-    (and (list?' form) (= (count form) 2) (= (first form) 'quote))
+    (and (seq? form) (= (count form) 2) (= (first form) 'quote))
       (second form)))
 
 (defn ^:private infixify* [[first second & rest :as list]]
@@ -24,7 +19,7 @@
     list))
 
 (defn infixify [form]
-  (if (list?' form)
+  (if (seq? form)
     (map infixify (infixify* form))
     form))
 
